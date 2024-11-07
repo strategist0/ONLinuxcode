@@ -4,7 +4,7 @@
 
 int main()
 {
-    printf("%s\n", NAME);
+    puts(NAME);
     printf("%s\n", ADDRESS);
     return 0;
 }
