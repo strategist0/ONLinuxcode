@@ -71,11 +71,25 @@ void strbuf_reset(struct strbuf *sb)
 }
 void strbuf_grow(struct strbuf *sb, size_t extra) 
 {
+    if (sb->len + extra > sb->alloc) {
+        size_t new_alloc = sb->alloc * 2;
+        if (new_alloc < sb->len + extra) {
+            new_alloc = sb->len + extra;
+        }
 
+        char *new_buf = (char *)realloc(sb->buf, new_alloc);
+        if (new_buf) {
+            sb->buf = new_buf;
+            sb->alloc = new_alloc;
+        }
+    }
 }
 void strbuf_add(struct strbuf *sb, const void *data, size_t len) 
 {
-
+    strbuf_grow(sb, len);
+    memcpy(sb->buf + sb->len, data, len);
+    sb->len += len;
+    sb->buf[sb->len] = '\0';
 }
 void strbuf_addch(struct strbuf *sb, int c) 
 {
