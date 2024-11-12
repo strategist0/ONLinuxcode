@@ -45,11 +45,22 @@ void strbuf_swap(struct strbuf *a, struct strbuf *b)
 }
 char *strbuf_detach(struct strbuf *sb, size_t *sz) 
 {
+    if(sz){
+        *sz = sb->alloc;
+    }
 
+    char *detached_buf = sb->buf;
+    sb->buf = NULL;
+    sb->len = 0;
+    sb->alloc = 0;
+    return detached_buf;
 }
 int strbuf_cmp(const struct strbuf *first, const struct strbuf *second) 
 {
-
+    if (first->len != second->len) {
+        return first->len - second->len;
+    }
+    return memcmp(first->buf, second->buf, first->len);
 }
 void strbuf_reset(struct strbuf *sb) 
 {
