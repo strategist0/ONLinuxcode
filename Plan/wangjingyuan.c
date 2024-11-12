@@ -64,7 +64,10 @@ int strbuf_cmp(const struct strbuf *first, const struct strbuf *second)
 }
 void strbuf_reset(struct strbuf *sb) 
 {
-
+    sb->len = 0;
+    if (sb->buf) {
+        sb->buf[0] = '\0';
+    }
 }
 void strbuf_grow(struct strbuf *sb, size_t extra) 
 {
