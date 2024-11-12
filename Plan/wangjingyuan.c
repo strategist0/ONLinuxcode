@@ -124,31 +124,96 @@ void strbuf_setlen(struct strbuf *sb, size_t len)
 }
 size_t strbuf_avail(const struct strbuf *sb) 
 {
-
+    return sb->alloc - sb->len - 1;
 }
 void strbuf_insert(struct strbuf *sb, size_t pos, const void *data, size_t len) 
 {
-
+    strbuf_grow(sb, len);
+    memmove(sb->buf + pos + len, sb->buf + pos, sb->len - pos);
+    memcpy(sb->buf + pos, data, len);
+    sb->len += len;
+    sb->buf[sb->len] = '\0';
 }
 void strbuf_rtrim(struct strbuf *sb) 
 {
+    size_t i = sb->len;
 
+    while (i > 0 && (sb->buf[i - 1] == ' ' || sb->buf[i - 1] == '\t' || sb->buf[i - 1] == '\n' || sb->buf[i - 1] == '\r')) {
+        i--;
+    }
+
+    if (i < sb->len) {
+        sb->len = i;
+        sb->buf[sb->len] = '\0';
+    }
 }
 void strbuf_ltrim(struct strbuf *sb) 
 {
+    size_t i = 0;
 
+    while (i < sb->len && (sb->buf[i] == ' ' || sb->buf[i] == '\t' || sb->buf[i] == '\n' || sb->buf[i] == '\r')) {
+        i++;
+    }
+
+    if (i > 0) {
+        memmove(sb->buf, sb->buf + i, sb->len - i);
+        sb->len -= i;
+        sb->buf[sb->len] = '\0';
+    }
 }
 void strbuf_remove(struct strbuf *sb, size_t pos, size_t len) 
 {
+    if (pos >= sb->len || len == 0) {
+        return;
+    }
 
+    size_t end = pos + len;
+    if (end > sb->len) {
+        end = sb->len;
+    }
+
+    memmove(sb->buf + pos, sb->buf + end, sb->len - end);
+
+    sb->len -= (end - pos);
+
+    sb->buf[sb->len] = '\0';
 }
 ssize_t strbuf_read(struct strbuf *sb, int fd, size_t hint) 
 {
+    size_t growth = hint ? hint : 8192;
 
+    strbuf_grow(sb, growth);
+
+    char buf[growth];
+    ssize_t total_read = 0;
+
+    ssize_t bytes_read;
+    while ((bytes_read = read(fd, buf, sizeof(buf))) > 0) {
+        strbuf_add(sb, buf, bytes_read);
+        total_read += bytes_read;
+    }
+
+    if (bytes_read < 0) {
+        return -1;
+    }
+
+    return total_read;
 }
 int strbuf_getline(struct strbuf *sb, FILE *fp) 
 {
+    char buffer[1024];
 
+    if (fgets(buffer, sizeof(buffer), fp) == NULL) {
+        return -1;
+    }
+
+    size_t len = strlen(buffer);
+    if (len > 0 && buffer[len - 1] == '\n') {
+        buffer[len - 1] = '\0';
+    }
+    strbuf_addstr(sb, buffer);
+
+    return 0;
 }
 struct strbuf **strbuf_split_buf(const char *str, size_t len, int terminator, int max) 
 {
