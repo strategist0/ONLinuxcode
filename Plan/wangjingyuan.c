@@ -217,31 +217,25 @@ int strbuf_getline(struct strbuf *sb, FILE *fp)
 }
 struct strbuf **strbuf_split_buf(const char *str, size_t len, int terminator, int max) 
 {
-    struct strbuf **result = malloc(sizeof(struct strbuf*) * (max + 1));
-    size_t start = 0;
-    int count = 0;
+    struct strbuf **result = (struct strbuf**)malloc(sizeof(struct strbuf*) * (max + 1));
+    size_t start = 0, count = 0;
 
     for (size_t i = 0; i < len; i++) {
-        if (str[i] == terminator || (max > 0 && count == max - 1)) {
-
-            struct strbuf *sb = malloc(sizeof(struct strbuf));
-            strbuf_init(sb);
-            strbuf_addstr(sb, &str[start]);
-            result[count] = sb;
-            count++;
-
+        if (str[i] == terminator && (max == 0 || count < max - 1)) {
+            size_t s_len = i - start;
+            struct strbuf *sb = (struct strbuf*)malloc(sizeof(struct strbuf));
+            strbuf_init(sb, s_len + 1);
+            strbuf_add(sb, str + start, s_len);
+            result[count++] = sb;
             start = i + 1;
-            if (count == max) {
-                break;
-            }
         }
     }
 
     if (start < len) {
-        struct strbuf *sb = malloc(sizeof(struct strbuf));
-        strbuf_init(sb);
-        strbuf_addstr(sb, &str[start]);
-        result[count] = sb;
+        struct strbuf *sb = (struct strbuf*)malloc(sizeof(struct strbuf));
+        strbuf_init(sb, len - start + 1);
+        strbuf_add(sb, str + start, len - start);
+        result[count++] = sb;
     }
 
     result[count] = NULL;
