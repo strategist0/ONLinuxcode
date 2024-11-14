@@ -5,5 +5,3 @@ int main()
 printf("love");
 return 0;
 }
-
-

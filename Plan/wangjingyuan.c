@@ -217,35 +217,52 @@ int strbuf_getline(struct strbuf *sb, FILE *fp)
 }
 struct strbuf **strbuf_split_buf(const char *str, size_t len, int terminator, int max) 
 {
-    struct strbuf **result = (struct strbuf**)malloc(sizeof(struct strbuf*) * (max + 1));
-    size_t start = 0, count = 0;
-
-    for (size_t i = 0; i < len; i++) {
-        if (str[i] == terminator && (max == 0 || count < max - 1)) {
-            size_t s_len = i - start;
-            struct strbuf *sb = (struct strbuf*)malloc(sizeof(struct strbuf));
-            strbuf_init(sb, s_len + 1);
-            strbuf_add(sb, str + start, s_len);
-            result[count++] = sb;
-            start = i + 1;
-        }
+    struct strbuf **ret = (struct strbuf **) malloc(sizeof(struct strbuf *) * (max + 1));
+    char s[len + 1], delim[2] = {(char) terminator};
+    memcpy(s, str, len + 1);
+    char *token = strtok(s, delim);
+    for (int i = 0; token && i < max; ret[++i] = NULL) {
+        ret[i] = (struct strbuf *) malloc(sizeof(struct strbuf));
+        strbuf_init(ret[i], 0);
+        strbuf_addstr(ret[i], token);
+        token = strtok(NULL, delim);
     }
-
-    if (start < len) {
-        struct strbuf *sb = (struct strbuf*)malloc(sizeof(struct strbuf));
-        strbuf_init(sb, len - start + 1);
-        strbuf_add(sb, str + start, len - start);
-        result[count++] = sb;
-    }
-
-    result[count] = NULL;
-    return result;
+    return ret;
 }
 bool strbuf_begin_judge(char *target_str, const char *str, int strnlen) 
 {
-
+    int i = 0;
+    while (i < strnlen && str[i] != '\0') {
+        if (target_str[i] != str[i]) {
+            return false; 
+        }
+        i++;
+    }
+    return true;
 }
 char *strbuf_get_mid_buf(char *target_buf, int begin, int end, int len) 
 {
+    if (!target_buf || begin < 0 || end > len || begin > end) {
+        return NULL;
+    }
 
+    if (begin == end) {
+        char* empty_str = (char*)malloc(1);
+        if (empty_str) {
+            empty_str[0] = '\0';
+        }
+        return empty_str;
+    }
+
+    int sub_len = end - begin;
+
+    char* result = (char*)malloc(sub_len + 1);
+    if (!result) {
+        return NULL;
+    }
+
+    strncpy(result, target_buf + begin, sub_len);
+    result[sub_len] = '\0';
+
+    return result;
 }
