@@ -234,7 +234,51 @@ int strbuf_getline(struct strbuf *sb, FILE *fp)
 }
 struct strbuf **strbuf_split_buf(const char *str, size_t len, int terminator, int max)
 {
-    
+    if (!str || len == 0) return NULL;
+
+    size_t count = 0;
+    size_t alloc_s = max > 0 ? max : 10;
+    struct strbuf **rst = (struct strbuf **)malloc((alloc_s + 1) * sizeof(struct strbuf *));
+    if (!rst) return NULL;
+
+    memset(rst, 0, (alloc_s + 1) * sizeof(struct strbuf *)); 
+
+    size_t start = 0;
+
+    for (size_t i = 0; i <= len; ++i) {
+        if (str[i] == terminator || i == len) {
+            size_t sgmt_l = i - start;
+
+            if (sgmt_l > 0) {
+                struct strbuf *sgmt = (struct strbuf *)malloc(sizeof(struct strbuf));
+                if (!sgmt) return NULL;
+
+                sgmt->len = sgmt_l;
+                sgmt->alloc = sgmt_l + 1;
+                sgmt->buf = (char *)malloc(sgmt->alloc);
+                if (!sgmt->buf) return NULL;
+
+                memcpy(sgmt->buf, str + start, sgmt_l);
+                sgmt->buf[sgmt_l] = '\0';
+                rst[count++] = sgmt;
+            }
+
+            start = i + 1;
+            if (max == 0 && count >= alloc_s) {
+                alloc_s *= 2;
+                struct strbuf **tmp = (struct strbuf **)realloc(rst, (alloc_s + 1) * sizeof(struct strbuf *));
+                if (!tmp) return NULL;
+                rst = tmp;
+                memset(rst + count, 0, (alloc_s + 1 - count) * sizeof(struct strbuf *));
+            }
+            if (max > 0 && count >= max) {
+                break;
+            }
+        }
+    }
+    rst[count] = NULL;
+
+    return rst;
 }
 bool strbuf_begin_judge(char *target_str, const char *str, int strnlen)
 {
