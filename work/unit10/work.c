@@ -31,5 +31,5 @@ subtot+=*(*(rain+year)+month);
 printf("%4.1f",subtot/YRS);
 }
 printf("\n");
-return0;
+return 0;
 }
