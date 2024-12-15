@@ -18,13 +18,13 @@
 #define COLOR_SYMLINK "\033[1;36m"
 
 typedef struct {
-    int show_all;
-    int long_list;
-    int recursive;
-    int sort_time;
-    int reverse;
-    int show_inode;
-    int show_blocks;
+    bool show_all;
+    bool long_list;
+    bool recursive;
+    bool sort_time;
+    bool reverse;
+    bool show_inode;
+    bool show_blocks;
 } Options;
 
 typedef struct FileNode {
@@ -51,25 +51,25 @@ int main(int argc, char* argv[]) {
             for (int j = 1; argv[i][j]; ++j) {
                 switch (argv[i][j]) {
                     case 'a':
-                        opts.show_all = 1;
+                        opts.show_all = true;
                         break;
                     case 'l':
-                        opts.long_list = 1;
+                        opts.long_list = true;
                         break;
                     case 'R':
-                        opts.recursive = 1;
+                        opts.recursive = true;
                         break;
                     case 't':
-                        opts.sort_time = 1;
+                        opts.sort_time = true;
                         break;
                     case 'r':
-                        opts.reverse = 1;
+                        opts.reverse = true;
                         break;
                     case 'i':
-                        opts.show_inode = 1;
+                        opts.show_inode = true;
                         break;
                     case 'b':
-                        opts.show_blocks = 1;
+                        opts.show_blocks = true;
                         break;
                     default:
                         fprintf(stderr, "未知参数: -%c\n", argv[i][j]);
