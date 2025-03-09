@@ -1,11 +1,9 @@
-#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
-#include <sys/wait.h>
-#include <unistd.h>
 
 int main() {
-        sleep(5);
+    while (1) {
+        run_shell();
+    }
     return 0;
 }
