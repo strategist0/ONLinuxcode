@@ -2,8 +2,6 @@
 #include <stdlib.h>
 
 int main() {
-    while (1) {
-        run_shell();
-    }
+    run_shell();
     return 0;
 }

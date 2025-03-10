@@ -3,8 +3,6 @@
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <sys/types.h>
-#include <sys/wait.h>
 #include <unistd.h>
 
 void signal_set() {
