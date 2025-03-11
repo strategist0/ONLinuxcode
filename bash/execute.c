@@ -69,6 +69,12 @@ void execute_command(char* cmd, int in_fd, int out_fd, int background) {
     }
 
     pid_t pid = fork();
+
+    if (pid < 0) {
+        perror("fork");
+        return;
+    }
+
     if (pid == 0) {
         if (infile) {
             int fd = open(infile, O_RDONLY);
