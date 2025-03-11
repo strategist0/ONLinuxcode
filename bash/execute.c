@@ -23,11 +23,11 @@ void execute_command(char* cmd, int in_fd, int out_fd, int background) {
             background = 1;
         } else if (strcmp(token, "<") == 0) {
             infile = strtok(NULL, " ");
-        } else if (strcmp(token, ">") == 0) {
-            outfile = strtok(NULL, " ");
         } else if (strcmp(token, ">>") == 0) {
             outfile = strtok(NULL, " ");
             append = 1;
+        } else if (strcmp(token, ">") == 0) {
+            outfile = strtok(NULL, " ");
         } else {
             args[argc++] = token;
         }
@@ -49,14 +49,14 @@ void execute_command(char* cmd, int in_fd, int out_fd, int background) {
         if (argc > 1) {
             if (strcmp(args[1], "-") == 0) {
                 if (strlen(prev_dir) == 0) {
-                    printf("No previous directory to change to\n");
+                    printf("Lowshell: cd -: OLDPWD not set\n");
                     return;
                 }
                 printf("%s\n", prev_dir);
                 chdir(prev_dir);
             } else {
-                if (chdir(args[1] != 0)) {
-                    perror("chdir");
+                if (chdir(args[1]) != 0) {
+                    perror("cd");
                     return;
                 }
             }
