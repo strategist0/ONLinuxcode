@@ -1,4 +1,7 @@
+#define _GNU_SOURCE
+#include <errno.h>
 #include <fcntl.h>
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -21,38 +24,43 @@
 #define UNDERLINE "\033[4m"
 #define RESET "\033[0m"
 
-void run_shell(char* cmd) {
-    signal_set();
+extern void execute_command(char* cmd, int in_fd, int out_fd, int err_fd);
 
-    char* cmd[MAX_CMD_LEN];
+void run_shell() {
+    char cmd[MAX_CMD_LEN];
 
     while (1) {
-        printf(RED "lowshell>" RESET);
+        printf("\033[1;32mLowshell> \033[0m");
         fflush(stdout);
         if (!fgets(cmd, MAX_CMD_LEN, stdin))
             break;
         cmd[strcspn(cmd, "\n")] = 0;
 
         char* commands[MAX_PIPES];
-        int num_commands = 0;
+        int cmd_count = 0;
         char* token = strtok(cmd, "|");
         while (token) {
-            commands[num_commands++] = token;
+            commands[cmd_count++] = token;
             token = strtok(NULL, "|");
         }
 
         int in_fd = STDIN_FILENO;
         int fds[2];
 
-        for (int i = 0; i < num_commands; i++) {
-            if (i < num_commands - 1)
+        for (int i = 0; i < cmd_count; i++) {
+            if (i < cmd_count - 1)
                 pipe(fds);
+
             execute_command(commands[i], in_fd,
-                            (i < num_commands - 1) ? fds[1] : STDOUT_FILENO, 0);
+                            (i < cmd_count - 1) ? fds[1] : STDOUT_FILENO, 0);
+
             if (i > 0)
                 close(in_fd);
-            close(fds[1]);
-            in_fd = fds[0];
+
+            if (i < cmd_count - 1) {
+                close(fds[1]);
+                in_fd = fds[0];
+            }
         }
     }
 }
