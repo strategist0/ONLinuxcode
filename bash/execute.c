@@ -6,32 +6,48 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
-#define MAX_CMD_LEN 1024
-#define MAX_PIPES 10
 #define MAX_ARGS 64
+#define FILE_MODE 0644
+#define MAX_DIR_LEN 4096
+
+static int handle_redirection(const char* filename, int flags, int std_fd) {
+    int fd = open(filename, flags, FILE_MODE);
+    if (fd < 0) {
+        perror("open");
+        return -1;
+    }
+    if (dup2(fd, std_fd) < 0) {
+        perror("dup2");
+        close(fd);
+        return -1;
+    }
+    close(fd);
+    return 0;
+}
 
 void execute_command(char* cmd, int in_fd, int out_fd, int background) {
-    static char prev_dir[MAX_CMD_LEN] = "";
+    static char prev_dir[MAX_DIR_LEN] = "";
     char* args[MAX_ARGS];
     int argc = 0;
     char *infile = NULL, *outfile = NULL;
     int append = 0;
 
-    char* token = strtok(cmd, " ");
+    char* saveptr;
+    char* token = strtok_r(cmd, " ", &saveptr);
     while (token) {
         if (strcmp(token, "&") == 0) {
             background = 1;
         } else if (strcmp(token, "<") == 0) {
-            infile = strtok(NULL, " ");
+            infile = strtok_r(NULL, " ", &saveptr);
         } else if (strcmp(token, ">>") == 0) {
-            outfile = strtok(NULL, " ");
+            outfile = strtok_r(NULL, " ", &saveptr);
             append = 1;
         } else if (strcmp(token, ">") == 0) {
-            outfile = strtok(NULL, " ");
+            outfile = strtok_r(NULL, " ", &saveptr);
         } else {
             args[argc++] = token;
         }
-        token = strtok(NULL, " ");
+        token = strtok_r(NULL, " ", &saveptr);
     }
     args[argc] = NULL;
 
@@ -39,67 +55,69 @@ void execute_command(char* cmd, int in_fd, int out_fd, int background) {
         return;
 
     if (strcmp(args[0], "cd") == 0) {
-        char current_dir[MAX_CMD_LEN];
-
+        char current_dir[MAX_DIR_LEN];
         if (getcwd(current_dir, sizeof(current_dir)) == NULL) {
             perror("getcwd");
             return;
         }
 
-        if (argc > 1) {
-            if (strcmp(args[1], "-") == 0) {
-                if (strlen(prev_dir) == 0) {
-                    printf("Lowshell: cd -: OLDPWD not set\n");
-                    return;
-                }
-                printf("%s\n", prev_dir);
-                chdir(prev_dir);
-            } else {
-                if (chdir(args[1]) != 0) {
-                    perror("cd");
-                    return;
-                }
+        char* target = argc > 1 ? args[1] : getenv("HOME");
+        if (target && strcmp(target, "-") == 0) {
+            if (*prev_dir == '\0') {
+                fprintf(stderr, "cd: OLDPWD not set\n");
+                return;
             }
-        } else {
-            chdir(getenv("HOME"));
+            target = prev_dir;
         }
 
-        strcpy(prev_dir, current_dir);
+        if (chdir(target) != 0) {
+            perror("cd");
+            return;
+        }
+
+        strncpy(prev_dir, current_dir, MAX_DIR_LEN - 1);
+        prev_dir[MAX_DIR_LEN - 1] = '\0';
         return;
     }
 
-    pid_t pid = fork();
+    if (strcmp(args[0], "exit") == 0) {
+        exit(EXIT_SUCCESS);
+    }
 
+    pid_t pid = fork();
     if (pid < 0) {
         perror("fork");
         return;
     }
 
     if (pid == 0) {
-        if (infile) {
-            int fd = open(infile, O_RDONLY);
-            dup2(fd, STDIN_FILENO);
-            close(fd);
+        if (infile && handle_redirection(infile, O_RDONLY, STDIN_FILENO) < 0) {
+            exit(EXIT_FAILURE);
         }
+
         if (outfile) {
-            int fd =
-                open(outfile,
-                     O_WRONLY | O_CREAT | (append ? O_APPEND : O_TRUNC), 0644);
-            dup2(fd, STDOUT_FILENO);
-            close(fd);
+            int flags = O_WRONLY | O_CREAT | (append ? O_APPEND : O_TRUNC);
+            if (handle_redirection(outfile, flags, STDOUT_FILENO) < 0) {
+                exit(EXIT_FAILURE);
+            }
         }
+
         if (in_fd != STDIN_FILENO) {
             dup2(in_fd, STDIN_FILENO);
             close(in_fd);
         }
+
         if (out_fd != STDOUT_FILENO) {
             dup2(out_fd, STDOUT_FILENO);
             close(out_fd);
         }
+
         execvp(args[0], args);
         perror("execvp");
-        exit(1);
-    } else if (!background) {
-        waitpid(pid, NULL, 0);
+        exit(EXIT_FAILURE);
+    } else {
+        if (!background) {
+            waitpid(pid, NULL, 0);
+        }
     }
 }

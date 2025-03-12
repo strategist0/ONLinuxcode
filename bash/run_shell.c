@@ -1,7 +1,9 @@
 #define _GNU_SOURCE
 #include <errno.h>
 #include <fcntl.h>
+#include <pwd.h>
 #include <signal.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -11,26 +13,39 @@
 
 #define MAX_CMD_LEN 1024
 #define MAX_PIPES 10
-#define MAX_ARGS 64
+#define MAX_DIR_LEN 4096
 
 #define RED "\033[0;31m"
 #define GREEN "\033[0;32m"
 #define YELLOW "\033[0;33m"
 #define BLUE "\033[0;34m"
 #define MAGENTA "\033[0;35m"
-#define CYAN "\033[0;36m"
+#define CYAN "\033[1;32m"
 #define WHITE "\033[0;37m"
 #define BOLD "\033[1m"
 #define UNDERLINE "\033[4m"
 #define RESET "\033[0m"
 
-extern void execute_command(char* cmd, int in_fd, int out_fd, int err_fd);
+extern void execute_command(char* cmd, int in_fd, int out_fd, int background);
 
 void run_shell() {
+    static char curr_dir[MAX_DIR_LEN] = "/";
     char cmd[MAX_CMD_LEN];
+    uid_t uid = getuid();
+    struct passwd* pw;
 
-    while (1) {
-        printf("\033[1;32mLowshell> \033[0m");
+    if ((pw = getpwuid(uid)) == NULL) {
+        perror("getpwuid");
+        exit(EXIT_FAILURE);
+    }
+
+    while (true) {
+        if (getcwd(curr_dir, MAX_DIR_LEN) == NULL) {
+            perror("getcwd");
+            exit(EXIT_FAILURE);
+        }
+
+        printf(CYAN "%s@LowShell:%s>" RESET, pw->pw_name, curr_dir);
         fflush(stdout);
         if (!fgets(cmd, MAX_CMD_LEN, stdin))
             break;
