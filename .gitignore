@@ -1,0 +1,8 @@
+/.vscode/
+*.md
+!README.md
+!LICENSE.md
+!CONTRIBUTING.md
+!CODE_OF_CONDUCT.md
+*.exe
+*.txt
