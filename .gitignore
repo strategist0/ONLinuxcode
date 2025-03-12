@@ -6,4 +6,6 @@
 !CODE_OF_CONDUCT.md
 *.exe
 *.txt
-
+*.o
+*.class
+*.out
