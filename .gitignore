@@ -1,4 +1,4 @@
-/.vscode/
+.vscode/
 *.md
 !README.md
 !LICENSE.md
@@ -10,4 +10,4 @@
 *.class
 *.out
 *.json
-/build/
+build/
